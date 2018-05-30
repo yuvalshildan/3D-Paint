@@ -74,8 +74,11 @@ public class DrawLineManager : MonoBehaviour
         //save obj as .stl
         if (Input.GetMouseButtonDown(1))
         {
-            GameObject[] gos = { currLine.gameObject };
-            pb_Stl_Exporter.Export(string.Format("test{0}.stl", i++), gos, FileType.Ascii);
+            if (currLine != null)
+            {
+                GameObject[] gos = { currLine.gameObject };
+                pb_Stl_Exporter.Export(string.Format("test{0}.stl", i++), gos, FileType.Ascii);
+            }
         }
 
     }
