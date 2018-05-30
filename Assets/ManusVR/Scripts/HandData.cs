@@ -121,6 +121,17 @@ namespace Assets.ManusVR.Scripts
             return _handValues[(int) deviceType].HandClosed;
         }
 
+
+        public bool HandPoints(device_type_t deviceType)
+        {
+            return _handValues[(int)deviceType].IsPoint;
+        }
+
+        public bool HandStartedPointing(device_type_t deviceType)
+        {
+            return _handValues[(int)deviceType].JustPointed;
+        }
+
         private HandValue[] _handValues = new HandValue[2];
 
         // Use this for initialization
@@ -134,22 +145,13 @@ namespace Assets.ManusVR.Scripts
             {
                 _handValues[i].CloseValue = CloseValue.Open;
                 _handValues[i].OnValueChanged = new ToggleEvent();
-                //TODO: DELETE
-                UnityAction<CloseValue> action;
-                action = listen;
-
-                _handValues[i].OnValueChanged.AddListener(action);
+                //_handValues[i].OnValueChanged.AddListener(action);
             }
 
             Manus.ManusGetHand(session, (device_type_t) 0, out _leftHand);
             Manus.ManusGetHand(session, (device_type_t) 1, out _rightHand);
         }
 
-        //TODO: DELETE
-        private void listen(CloseValue i)
-        {
-            Debug.Log("hi");
-        }
         // Update is called once per frame
         private void Update()
         {
@@ -163,14 +165,14 @@ namespace Assets.ManusVR.Scripts
             {
                 _leftHand = leftHand;
                 UpdateCloseValue(TotalAverageValue(_leftHand), device_type_t.GLOVE_LEFT);
-                UpdatePointValue(TotalPointAverageValue(_leftHand), device_type_t.GLOVE_LEFT);
+                UpdatePointValue(CalculateIsPointing(_leftHand), device_type_t.GLOVE_LEFT);
             }
 
             if (_rightRet == manus_ret_t.MANUS_SUCCESS)
             {
                 _rightHand = rightHand;
                 UpdateCloseValue(TotalAverageValue(_rightHand), device_type_t.GLOVE_RIGHT);
-                UpdatePointValue(TotalPointAverageValue(_rightHand), device_type_t.GLOVE_RIGHT);
+                UpdatePointValue(CalculateIsPointing(_rightHand), device_type_t.GLOVE_RIGHT);
             }
 
             ManualWristRotation();
@@ -299,7 +301,7 @@ namespace Assets.ManusVR.Scripts
                 {
                     sensors++;
                     total += hand.raw.finger_sensor[bendPosition];
-                    Debug.Log(String.Format("{0} {1}", hand.raw.finger_sensor[bendPosition], bendPosition));
+                    
                     //TODO
                     //0,1 - pinky
                     //2,3 - kmitza
@@ -312,27 +314,18 @@ namespace Assets.ManusVR.Scripts
             return total / sensors;
         }
 
-        public double TotalPointAverageValue(manus_hand_t hand)
+        public bool CalculateIsPointing(manus_hand_t hand)
         {
-            int sensors = 0;
-            double total = 0;
-            // Loop through all of the finger values
-            for (int bendPosition = 0; bendPosition < 8; bendPosition++)
+            //if etzba is open
+            if(Math.Abs(hand.raw.finger_sensor[6]) < 0.1 && Math.Abs(hand.raw.finger_sensor[7]) < 0.1)
             {
-                // Only get the sensor values of the first bending point without the thumb (1,3,5,7)
-                if (bendPosition < 6)
+                //check that zeret,kmitsa,ama are closed
+                if(Math.Abs(hand.raw.finger_sensor[1]-1) < 0.2 && Math.Abs(hand.raw.finger_sensor[3] - 1) < 0.2 && Math.Abs(hand.raw.finger_sensor[5] - 1) < 0.2)
                 {
-                    sensors++;
-                    total += hand.raw.finger_sensor[bendPosition];
-                }
-                else
-                {
-                    sensors++;
-                    total += (1 - hand.raw.finger_sensor[bendPosition]);
+                    return true;
                 }
             }
-
-            return total / sensors;
+            return false;
         }
 
         public double Average(device_type_t deviceType)
@@ -340,7 +333,7 @@ namespace Assets.ManusVR.Scripts
             return TotalAverageValue(deviceType == device_type_t.GLOVE_RIGHT ? _rightHand : _leftHand);
         }
 
-        internal void UpdatePointValue(double pointValue, device_type_t deviceType)
+        internal void UpdatePointValue(bool isPointing, device_type_t deviceType)
         {
             HandValue handValue;
             if (deviceType == device_type_t.GLOVE_LEFT)
@@ -349,7 +342,7 @@ namespace Assets.ManusVR.Scripts
                 handValue = _handValues[1];
 
             bool before = handValue.IsPoint;
-            handValue.IsPoint = pointValue > 0.8;//TODO: fit to value
+            handValue.IsPoint = isPointing;
             handValue.JustPointed = before == false && handValue.IsPoint == true; //trigger to start painting
             handValue.StoppedPointing = before == true && handValue.IsPoint == false; //trigger to stop painting
 
