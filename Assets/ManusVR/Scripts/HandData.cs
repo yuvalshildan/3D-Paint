@@ -317,10 +317,10 @@ namespace Assets.ManusVR.Scripts
         public bool CalculateIsPointing(manus_hand_t hand)
         {
             //if etzba is open
-            if(Math.Abs(hand.raw.finger_sensor[6]) < 0.1 && Math.Abs(hand.raw.finger_sensor[7]) < 0.1)
+            if(Math.Abs(hand.raw.finger_sensor[6]) < 0.1 && Math.Abs(hand.raw.finger_sensor[7]) < 0.2)
             {
                 //check that zeret,kmitsa,ama are closed
-                if(Math.Abs(hand.raw.finger_sensor[1]-1) < 0.2 && Math.Abs(hand.raw.finger_sensor[3] - 1) < 0.2 && Math.Abs(hand.raw.finger_sensor[5] - 1) < 0.2)
+                if(Math.Abs(hand.raw.finger_sensor[1]-1) < 0.3 && Math.Abs(hand.raw.finger_sensor[3] - 1) < 0.3 && Math.Abs(hand.raw.finger_sensor[5] - 1) < 0.3)
                 {
                     return true;
                 }
